@@ -1,6 +1,6 @@
 # Casa da Mãe — como publicar
 
-Painel para registrar as contas da casa (aluguel, gás, energia, internet e outras), dividir por percentual entre Gabi, Matheus e Mãe, registrar repasses e ajudas e ver o histórico.
+Painel para registrar as contas da casa (aluguel, gás, energia, internet e outras), dividir por percentual entre Gabi, Matheus e Mãe, registrar repasses e o Extra do Mês e ver o histórico.
 
 ## 1. Supabase (banco na nuvem)
 
@@ -34,13 +34,14 @@ Com os campos vazios, o painel abre em **modo local** (salva só no navegador, p
 1. Clique na engrenagem e defina o percentual de cada um (precisa somar 100%).
 2. Lance as contas do mês em **+ Conta**. Ao marcar "Conta já paga", informe quem pagou.
 3. Quando alguém transferir a parte dele, registre em **+ Repasse** (ou use o botão **Registrar** na sugestão de acerto).
-4. A ajuda extra vai em **+ Ajuda** e não entra na divisão.
-5. No mês seguinte, use **Copiar as contas de [mês anterior]** e ajuste os valores de gás e energia.
+4. Valores a mais vão em **+ Extra do Mês** e não entram na divisão.
+5. Para ser lembrado do aluguel: engrenagem → **Lembrete do aluguel** → Adicionar ao Google Agenda (todo dia 9, véspera do vencimento).
+6. No mês seguinte, use **Copiar as contas de [mês anterior]** e ajuste os valores de gás e energia.
 
 ## Anexos (boleto e comprovante)
 
 - Em cada conta dá para anexar o **boleto/conta** (PDF ou foto) e, quando marcada como paga, o **comprovante de pagamento**.
-- Repasses e ajudas também aceitam comprovante (PIX, transferência).
+- Repasses e Extra do Mês também aceitam comprovante (PIX, transferência).
 - No celular, o botão "Anexar PDF ou foto" permite tirar foto na hora. Fotos grandes são reduzidas automaticamente; limite de 10 MB por arquivo.
 - Os arquivos ficam no Storage do Supabase (bucket privado `cm-arquivos`) e abrem por um link temporário.
 - No modo local (sem Supabase) o limite é 2 MB, porque o arquivo fica guardado no navegador.
