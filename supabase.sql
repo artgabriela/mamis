@@ -96,3 +96,43 @@ create policy cm_arquivos_select on storage.objects for select to anon using (bu
 create policy cm_arquivos_insert on storage.objects for insert to anon with check (bucket_id = 'cm-arquivos');
 create policy cm_arquivos_update on storage.objects for update to anon using (bucket_id = 'cm-arquivos') with check (bucket_id = 'cm-arquivos');
 create policy cm_arquivos_delete on storage.objects for delete to anon using (bucket_id = 'cm-arquivos');
+
+-- ---------------------------------------------------------------------
+-- LOGIN (celular + senha), aplicado depois do bloco acima.
+-- Só usuários logados que estão em cm_membros acessam dados e arquivos.
+-- Usuários, números e senhas são cadastrados à parte, direto no banco
+-- (login interno <55DDDNUMERO>@mamis.app), e NÃO ficam neste arquivo.
+-- ---------------------------------------------------------------------
+create table if not exists public.cm_membros (
+  telefone   text primary key,
+  pessoa_id  text not null references public.cm_pessoas(id),
+  user_id    uuid unique references auth.users(id) on delete set null,
+  criado_em  timestamptz default now()
+);
+alter table public.cm_membros enable row level security;
+create index if not exists cm_membros_pessoa_idx on public.cm_membros (pessoa_id);
+
+create or replace function public.cm_e_membro()
+returns boolean language sql stable security definer set search_path = ''
+as $$ select exists (select 1 from public.cm_membros m where m.user_id = (select auth.uid())) $$;
+revoke all on function public.cm_e_membro() from public, anon;
+grant execute on function public.cm_e_membro() to authenticated;
+
+drop policy if exists cm_membros_proprio on public.cm_membros;
+create policy cm_membros_proprio on public.cm_membros for select to authenticated using (user_id = (select auth.uid()));
+
+drop policy if exists cm_pessoas_all     on public.cm_pessoas;
+drop policy if exists cm_contas_all      on public.cm_contas;
+drop policy if exists cm_lancamentos_all on public.cm_lancamentos;
+create policy cm_pessoas_all     on public.cm_pessoas     for all to authenticated using ((select public.cm_e_membro())) with check ((select public.cm_e_membro()));
+create policy cm_contas_all      on public.cm_contas      for all to authenticated using ((select public.cm_e_membro())) with check ((select public.cm_e_membro()));
+create policy cm_lancamentos_all on public.cm_lancamentos for all to authenticated using ((select public.cm_e_membro())) with check ((select public.cm_e_membro()));
+
+drop policy if exists cm_arquivos_select on storage.objects;
+drop policy if exists cm_arquivos_insert on storage.objects;
+drop policy if exists cm_arquivos_update on storage.objects;
+drop policy if exists cm_arquivos_delete on storage.objects;
+create policy cm_arquivos_select on storage.objects for select to authenticated using (bucket_id = 'cm-arquivos' and (select public.cm_e_membro()));
+create policy cm_arquivos_insert on storage.objects for insert to authenticated with check (bucket_id = 'cm-arquivos' and (select public.cm_e_membro()));
+create policy cm_arquivos_update on storage.objects for update to authenticated using (bucket_id = 'cm-arquivos' and (select public.cm_e_membro())) with check (bucket_id = 'cm-arquivos' and (select public.cm_e_membro()));
+create policy cm_arquivos_delete on storage.objects for delete to authenticated using (bucket_id = 'cm-arquivos' and (select public.cm_e_membro()));

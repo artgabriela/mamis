@@ -52,8 +52,12 @@ Com os campos vazios, o painel abre em **modo local** (salva só no navegador, p
 - A diferença mostra quem está em dia, quem falta e quem pagou a mais. O quadro "Para equilibrar o mês" sugere os repasses.
 - Cada conta guarda a própria divisão. Mudar o percentual nos ajustes afeta só as contas novas, a não ser que você marque "Aplicar a nova divisão às contas do mês".
 
-## Segurança
+## Segurança e acesso
 
-O acesso está liberado para quem tiver o link do painel (a chave anon fica visível no código publicado). Para uso familiar é suficiente; se quiser restringir, dá para adicionar login por e-mail do Supabase depois.
+O painel é fechado: só entra quem fizer login com **celular + senha**, e só os números cadastrados na tabela `cm_membros` (Gabi, Matheus e Mãe). Quem tiver só o link, ou a chave pública que aparece no código, não vê nem altera nada, nem as contas nem os arquivos. O bloqueio é feito no próprio Supabase (RLS).
+
+- O login fica salvo no aparelho. Para sair ou trocar a senha: engrenagem → **Sua conta**.
+- **Esqueceu a senha?** Não há recuperação por SMS. É preciso gerar uma nova senha pelo Supabase (peça ao Claude).
+- **Incluir alguém novo:** criar o usuário no Supabase (login interno `55DDDNUMERO@mamis.app`) e adicionar o número em `cm_membros`.
 
 Use **Exportar backup** de vez em quando para guardar uma cópia em JSON.

@@ -19,6 +19,7 @@
    (Project Settings > API > Project URL e anon public key).
    Com os campos vazios o painel roda em MODO LOCAL, só para teste.
    ===================================================================== */
+const DOMINIO_LOGIN = 'mamis.app'; // login interno: <telefone>@mamis.app
 const CONFIG = {
   SUPABASE_URL: 'https://osvbjisdmhaveekyrcjt.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zdmJqaXNkbWhhdmVla3lyY2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4Njk3NTEsImV4cCI6MjEwOTQ0NTc1MX0.jyqPUfTuQEwGnV_ku0OVmO5kVwkT3RXj-rbrCkBjoQ8'
@@ -172,6 +173,7 @@ dialog::backdrop{background:rgba(20,18,15,.45)}
 .check{display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0 12px;cursor:pointer}
 .check input{width:18px;height:18px;accent-color:var(--accent)}
 .prow{display:grid;grid-template-columns:1fr 84px 44px;gap:8px;align-items:center;margin-bottom:8px}
+.prow input{min-width:0;width:100%}
 .prow input[type=color]{height:38px;padding:3px;border-radius:10px;border:1px solid var(--line);background:var(--bg);width:100%}
 .note{font-size:12px;color:var(--muted);margin:2px 0 10px}
 .seg{display:flex;background:var(--soft);border-radius:10px;padding:3px;margin-bottom:12px}
@@ -192,6 +194,16 @@ dialog::backdrop{background:rgba(20,18,15,.45)}
 .clip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);background:var(--soft);padding:2px 7px;border-radius:999px;margin-right:4px}
 .clip svg{width:11px;height:11px}
 .item .tags{margin-top:3px;display:flex;flex-wrap:wrap;gap:4px}
+
+/* Login */
+.login{max-width:380px;margin:40px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 20px;box-shadow:var(--shadow)}
+.login h2{margin:0 0 4px;font-size:18px}
+.login p{margin:0 0 18px;color:var(--muted);font-size:13px}
+.login .btn{width:100%;padding:12px;font-size:15px;font-weight:600;margin-top:4px}
+.login .erro{color:var(--danger);font-size:13px;margin:4px 0 10px;min-height:1em}
+body.deslogado .monthbar, body.deslogado .mbar, body.deslogado #btnAjustes{display:none !important}
+.conta-box{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+.conta-box h4{margin:0 0 8px;font-size:14px}
 
 /* Barra de ações fixa (celular) */
 .mbar{display:none}
@@ -219,7 +231,8 @@ dialog::backdrop{background:rgba(20,18,15,.45)}
   .item .t2{white-space:normal}
   .settle .it{flex-wrap:wrap}
   .hrow{grid-template-columns:46px 1fr 82px;gap:8px}
-  .field input,.field select{font-size:16px;padding:11px 12px} /* 16px evita zoom no iPhone */
+  .field input,.field select{font-size:16px;padding:11px 12px}
+  .login{margin-top:16px} /* 16px evita zoom no iPhone */
   .split .sr input,.prow input{font-size:16px}
   .btn{padding:10px 14px;font-size:14px}
   dialog{width:100vw;max-width:100vw;margin:auto 0 0;border-radius:20px 20px 0 0;max-height:92vh;max-height:92dvh}
@@ -377,6 +390,27 @@ const Store = {
     d[tabela] = d[tabela].filter(x=>x.id!==id);
     this._writeLocal();
   },
+  /* ---- Login (telefone + senha) ---- */
+  async sessao(){
+    if(this.mode!=='remote') return { local:true };
+    const { data } = await this.sb.auth.getSession();
+    return data.session;
+  },
+  async entrar(telefone, senha){
+    const { error } = await this.sb.auth.signInWithPassword({ email: telefone + '@' + DOMINIO_LOGIN, password: senha });
+    if(error) throw error;
+  },
+  async sair(){ if(this.mode==='remote'){ try{ await this.sb.auth.signOut({ scope:'local' }); }catch(e){ console.warn(e); } } },
+  async trocarSenha(nova){
+    const { error } = await this.sb.auth.updateUser({ password: nova });
+    if(error) throw error;
+  },
+  async quemSou(){
+    if(this.mode!=='remote') return null;
+    const { data } = await this.sb.from('cm_membros').select('pessoa_id').limit(1);
+    return data && data[0] ? data[0].pessoa_id : null;
+  },
+
   /* ---- Arquivos (boleto / comprovante) ---- */
   async upload(file, nomeBase){
     const ext = (file.name.split('.').pop() || (file.type==='application/pdf'?'pdf':'jpg')).toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -415,14 +449,19 @@ const Store = {
     if(this.mode!=='remote') return;
     let t;
     const deb = () => { clearTimeout(t); t = setTimeout(onChange, 350); };
+    if(this.ch) return;
     const ch = this.sb.channel('casa-da-mae');
     Object.values(TABELAS).forEach(tb => ch.on('postgres_changes', { event:'*', schema:'public', table:tb }, deb));
     ch.subscribe();
+    this.ch = ch;
+  },
+  unsubscribe(){
+    if(this.ch){ this.sb.removeChannel(this.ch); this.ch = null; }
   }
 };
 
 /* ===================== Estado ===================== */
-const S = { pessoas:[], contas:[], lancamentos:[], mes: mesAtual(), carregado:false, erro:null };
+const S = { pessoas:[], contas:[], lancamentos:[], mes: mesAtual(), carregado:false, erro:null, logado:false, eu:null };
 
 function normalizar(d){
   S.pessoas = (d.pessoas||[]).map(p=>({...p, pct:Number(p.pct)||0, ordem:Number(p.ordem)||0})).sort((a,b)=>a.ordem-b.ordem);
@@ -499,7 +538,42 @@ function acertos(r){
 }
 
 /* ===================== Renderização ===================== */
+function normalizarTelefone(t){
+  let d = String(t||'').replace(/\D/g,'').replace(/^0+/,'');
+  if(d.length===10 || d.length===11) d = '55' + d;
+  return d;
+}
+function renderLogin(msg){
+  document.body.classList.add('deslogado');
+  const sync = $('#sync'); sync.className = 'sync'; sync.querySelector('span').textContent = 'Protegido';
+  $('#banner').innerHTML = '';
+  $('#subtitle').textContent = 'Acesso só para a família';
+  $('#app').innerHTML = `<form class="login" id="frmLogin" autocomplete="on">
+    <h2>Entrar</h2>
+    <p>Use o seu número de celular e a sua senha.</p>
+    <div class="field"><label for="lgTel">Celular com DDD</label><input id="lgTel" name="username" type="tel" inputmode="tel" autocomplete="username" placeholder="(19) 99999-9999" required></div>
+    <div class="field"><label for="lgSenha">Senha</label><input id="lgSenha" name="password" type="password" autocomplete="current-password" required></div>
+    <div class="erro" id="lgErro">${esc(msg||'')}</div>
+    <button class="btn primary" type="submit">Entrar</button>
+  </form>`;
+  $('#frmLogin').onsubmit = async e=>{
+    e.preventDefault();
+    const b = e.target.querySelector('button'); b.disabled = true; b.textContent = 'Entrando…';
+    $('#lgErro').textContent = '';
+    try{
+      await Store.entrar(normalizarTelefone($('#lgTel').value), $('#lgSenha').value);
+      await iniciarSessao();
+    }catch(err){
+      console.error(err);
+      $('#lgErro').textContent = /invalid/i.test(err.message||'') ? 'Celular ou senha incorretos.' : 'Não foi possível entrar: ' + (err.message||err);
+      b.disabled = false; b.textContent = 'Entrar';
+    }
+  };
+}
+
 function render(){
+  if(!S.logado) return renderLogin();
+  document.body.classList.remove('deslogado');
   const sync = $('#sync');
   sync.className = 'sync ' + (S.erro ? 'err' : Store.mode==='remote' ? 'on' : 'local');
   sync.querySelector('span').textContent = S.erro ? 'Erro de conexão' : Store.mode==='remote' ? 'Na nuvem' : 'Modo local';
@@ -787,7 +861,7 @@ function abrirConta(id){
     <label class="check"><input type="checkbox" name="paga" id="chkPaga" ${c?.paga?'checked':''}> Conta já paga</label>
     <div id="boxPaga" style="${c?.paga?'':'display:none'}">
       <div class="grid2">
-        <div class="field"><label>Quem pagou</label><select name="pago_por">${optsPessoas(c?.pago_por || 'mae')}</select></div>
+        <div class="field"><label>Quem pagou</label><select name="pago_por">${optsPessoas(c?.pago_por || S.eu || 'mae')}</select></div>
         <div class="field"><label>Pago em</label><input type="date" name="pago_em" value="${esc(c?.pago_em || hojeISO())}"></div>
       </div>
       ${htmlAnexo('comprovante_path', 'Comprovante de pagamento', c?.comprovante_path, 'Nenhum comprovante')}
@@ -834,7 +908,7 @@ function abrirLanc(tipo, id, preset){
     <input type="hidden" name="tipo" value="${tipo}">
     <p class="note" id="notaTipo">${ehAjuda ? 'Ajuda é um valor extra, fora da divisão das contas.' : 'Repasse é o dinheiro transferido para quem pagou as contas, para acertar a cota.'}</p>
     <div class="grid2">
-      <div class="field"><label>De</label><select name="de">${optsPessoas(v.de || 'gabi')}</select></div>
+      <div class="field"><label>De</label><select name="de">${optsPessoas(v.de || S.eu || 'gabi')}</select></div>
       <div class="field"><label>Para</label><select name="para">${optsPessoas(v.para || 'mae')}</select></div>
     </div>
     <div class="grid2">
@@ -879,7 +953,12 @@ function abrirAjustes(){
       <input type="color" name="cor_${esc(p.id)}" value="${esc(p.cor||'#999999')}">
     </div>`).join('')}
     <div class="sumline" id="sumline"></div>
-    <label class="check" style="margin-top:12px"><input type="checkbox" name="aplicar"> Aplicar a nova divisão às contas de ${esc(nomeMes(S.mes))}</label>`;
+    <label class="check" style="margin-top:12px"><input type="checkbox" name="aplicar"> Aplicar a nova divisão às contas de ${esc(nomeMes(S.mes))}</label>
+    ${Store.mode==='remote' ? `<div class="conta-box">
+      <h4>Sua conta${S.eu ? ' · '+esc(pessoa(S.eu).nome) : ''}</h4>
+      <div class="field"><label>Nova senha (mínimo 6 caracteres)</label><input type="password" id="novaSenha" autocomplete="new-password"></div>
+      <div class="btns"><button type="button" class="btn" id="btnTrocarSenha">Trocar senha</button><button type="button" class="btn danger" id="btnSair">Sair</button></div>
+    </div>` : ''}`;
   abrirModal('Ajustes da divisão', corpo, {
     salvar: async fd=>{
       const {div,soma} = lerDivisao(fd);
@@ -897,6 +976,17 @@ function abrirAjustes(){
     el.textContent='Soma: '+String(soma).replace('.',',')+'%'+(Math.abs(soma-100)>0.05?' — precisa fechar 100%':'');
     el.className='sumline'+(Math.abs(soma-100)>0.05?' bad':''); };
   form.querySelectorAll('input[name^="div_"]').forEach(i=>i.addEventListener('input',upd)); upd();
+  const bt = $('#btnTrocarSenha');
+  if(bt) bt.onclick = async ()=>{
+    const v = $('#novaSenha').value;
+    if(v.length < 6){ toast('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    bt.disabled = true;
+    try{ await Store.trocarSenha(v); $('#novaSenha').value=''; toast('Senha alterada'); }
+    catch(e){ toast('Não foi possível trocar: '+(e.message||e)); }
+    finally{ bt.disabled = false; }
+  };
+  const bs = $('#btnSair');
+  if(bs) bs.onclick = async ()=>{ dlg.close(); await Store.sair(); encerrarSessao(); };
 }
 
 async function copiarMesAnterior(){
@@ -939,11 +1029,33 @@ $('#mbar').addEventListener('click', e=>{
 });
 // Fechar o modal tocando fora dele
 dlg.addEventListener('click', e=>{ if(e.target===dlg) dlg.close(); });
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && Store.mode==='remote') carregar(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && Store.mode==='remote' && S.logado) carregar(); });
 
 /* ===================== Início ===================== */
+function encerrarSessao(){
+  S.logado=false; S.eu=null; S.carregado=false; S.pessoas=[]; S.contas=[]; S.lancamentos=[];
+  Store.unsubscribe(); renderLogin();
+}
+async function iniciarSessao(){
+  S.logado = true;
+  S.eu = await Store.quemSou();
+  if(Store.mode==='remote' && !S.eu){
+    await Store.sair();
+    return renderLogin('Este número não tem acesso ao painel.');
+  }
+  await carregar();
+  Store.subscribe(carregar);
+}
 Store.init();
-carregar().then(()=>Store.subscribe(carregar));
+(async ()=>{
+  if(Store.mode==='remote'){
+    Store.sb.auth.onAuthStateChange((ev)=>{
+      if(ev==='SIGNED_OUT' && S.logado) encerrarSessao();
+    });
+  }
+  const sess = await Store.sessao();
+  if(sess) await iniciarSessao(); else renderLogin();
+})();
 </script>
 </body>
 </html>
