@@ -958,7 +958,6 @@ function abrirLanc(tipo, id, preset){
     salvar: async fd=>{
       const valor = parseValor(fd.get('valor'));
       if(!(valor>0)){ toast('Informe um valor válido.'); return false; }
-      if(fd.get('tipo')==='repasse' && fd.get('de')===fd.get('para')){ toast('No repasse, quem envia e quem recebe precisam ser diferentes.'); return false; }
       const idL = l?.id || uid(), mesL = fd.get('mes') || S.mes;
       const anx = await processarAnexos(`lancamentos/${mesL}/${idL}`);
       if(!anx) return false;
