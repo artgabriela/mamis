@@ -33,7 +33,7 @@ Com os campos vazios, o painel abre em **modo local** (salva só no navegador, p
 
 1. Clique na engrenagem e defina o percentual de cada um (precisa somar 100%).
 2. Lance as contas do mês em **+ Conta**. Ao marcar "Conta já paga", informe quem pagou.
-3. Quando alguém transferir a parte dele, registre em **+ Repasse** (ou use o botão **Registrar** na sugestão de acerto).
+3. Quando alguém entregar a parte dele, toque em **Marcar como Pago** no cartão da pessoa (em "Quem Paga Quanto").
 4. Valores a mais vão em **+ Extra do Mês**: abatem a cota de quem recebe.
 5. Para ser lembrado do aluguel: engrenagem → **Lembrete do aluguel** → Adicionar ao Google Agenda (todo dia 9, véspera do vencimento).
 6. No mês seguinte, use **Lançar os fixos de [mês anterior]** e ajuste os valores de gás e energia.
@@ -49,9 +49,10 @@ Com os campos vazios, o painel abre em **modo local** (salva só no navegador, p
 ## Como o cálculo funciona
 
 - **Cota** = soma de cada conta × percentual da pessoa naquela conta, **mais** os Extras do Mês que ela deu, **menos** os que ela recebeu.
-- **Extra do Mês** com alguém em "Para" abate a cota de quem recebe (aparece "− R$ … extra") e entra na cota de quem deu ("+ R$ … extra"). Abate assim que é lançado, pago ou não. Extra sem destinatário fica fora da divisão.
-- **Já contribuiu** = contas que a pessoa pagou + repasses enviados − repasses recebidos + Extras pagos que deu − Extras pagos que recebeu.
-- A diferença mostra quem está em dia, quem falta e quem pagou a mais. O quadro "Para equilibrar o mês" sugere os repasses.
+- **Extra do Mês** com alguém em "Para" abate a cota de quem recebe (aparece "− R$ … Extra") e entra na cota de quem deu ("+ R$ … Extra"). Abate assim que é lançado, pago ou não. Extra sem destinatário fica fora da divisão.
+- **Parte Paga:** no cartão de cada pessoa, em "Quem Paga Quanto", o botão **Marcar como Pago** registra que ela entregou a parte dela (valor já preenchido com o que falta; dá para anexar comprovante). É o jeito oficial de quitar a cota.
+- **Já Contribuiu** = Partes Pagas + Extras pagos que deu − Extras pagos que recebeu. Quando chega na cota, o cartão mostra **✓ Parte Paga**.
+- **"Quem Pagou"** das contas e os **Repasses** são só registro (controle de que a conta foi paga e de transferências); não entram no cálculo, para não contar duas vezes.
 - Cada conta guarda a própria divisão. Mudar o percentual nos ajustes afeta só as contas novas, a não ser que você marque "Aplicar a nova divisão às contas do mês".
 
 ## Fixo ou avulso
